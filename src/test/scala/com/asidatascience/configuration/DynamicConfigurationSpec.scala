@@ -1,37 +1,19 @@
 package com.asidatascience.configuration
 
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 import org.scalatest._
 import org.scalatest.concurrent._
 
-import akka.actor.ActorSystem
-
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-
-import java.util.concurrent.atomic.AtomicInteger
-
 class DynamicConfigurationSpec
-extends FlatSpec
-with Matchers
-with BeforeAndAfterAll
+extends BaseSpec
 with Eventually
-with Inside
-with ScalaFutures {
+with Inside {
 
   case object IntentionalException extends Exception("intentional exception")
-
-  override implicit val patienceConfig = PatienceConfig(
-    timeout = 5.seconds, interval = 50.millis)
-
-  implicit private val actorSystem = ActorSystem()
-
-  override def afterAll(): Unit = {
-    actorSystem.terminate().futureValue
-    ()
-  }
-
-  case class Configuration(timestamp: Long)
 
   private def newConfiguration = Configuration(System.nanoTime)
 

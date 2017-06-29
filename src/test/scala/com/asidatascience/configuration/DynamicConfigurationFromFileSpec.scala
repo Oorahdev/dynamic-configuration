@@ -2,47 +2,17 @@ package com.asidatascience.configuration
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Path, Paths}
-import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Success, Try}
+import scala.util.Try
 
-import akka.actor.ActorSystem
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Inside, Matchers}
+import org.scalatest.concurrent.Eventually
+import org.scalatest.Inside
 
 class DynamicConfigurationFromFileSpec
-extends FlatSpec
-with Matchers
-with BeforeAndAfterAll
-with ScalaFutures
+extends BaseSpec
 with Eventually
 with Inside {
-
-  override implicit val patienceConfig = PatienceConfig(
-    timeout = 5.seconds, interval = 50.millis)
-
-  implicit private val actorSystem = ActorSystem()
-
-  override def afterAll(): Unit = {
-    actorSystem.terminate().futureValue
-    ()
-  }
-
-  case class Configuration(timestamp: Long)
-
-  private val dummyConfiguration = Configuration(1L)
-  private val dummyContents = "dummy-contents"
-
-  trait TestConfigurationParser {
-    val nHits = new AtomicInteger(0)
-
-    def parse(contents: String): Try[Configuration] = {
-      contents shouldEqual dummyContents
-      nHits.incrementAndGet()
-      Success(dummyConfiguration)
-    }
-  }
 
   private def withTemporaryFile(block: Path => Unit): Unit = {
     val file = File.createTempFile("dynamic-configuration", ".tmp")
@@ -65,14 +35,14 @@ with Inside {
 
   "DynamicConfigurationFromFile" should "return None initially" in
   withTemporaryFile { path =>
-    val parser = new TestConfigurationParser {}
+    val parser = new TestConfigurationParser(dummyContents)
     val configuration = newDynamicConfiguration(path, parser.parse)
     configuration.currentConfiguration shouldEqual None
     ()
   }
 
   it should "register an initial configuration" in withTemporaryFile { path =>
-    val parser = new TestConfigurationParser {}
+    val parser = new TestConfigurationParser(dummyContents)
     val configuration = newDynamicConfiguration(path, parser.parse)
 
     actorSystem.scheduler.scheduleOnce(1.second) {
